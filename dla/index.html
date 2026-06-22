@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DLA — Diffusion-Limited Aggregation</title>
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#7cc4ff;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 800px at 70% -10%,#15151f,#0a0a0f 60%);
+    color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;justify-content:center;
+  }
+  .wrap{display:flex;gap:24px;padding:28px;max-width:1100px;width:100%;align-items:flex-start}
+  @media (max-width:880px){.wrap{flex-direction:column;align-items:center}}
+
+  .stage{position:relative;flex:0 0 auto}
+  canvas{
+    display:block;width:min(64vh,600px);height:min(64vh,600px);
+    background:#08080c;border:1px solid var(--line);border-radius:10px;
+    image-rendering:pixelated;box-shadow:0 18px 60px -20px #000,0 0 0 1px #000 inset;
+  }
+
+  aside{flex:1 1 320px;min-width:280px;max-width:380px}
+  h1{font-size:18px;margin:0 0 2px;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;line-height:1.5}
+  .sub b{color:var(--accent);font-weight:600}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:8px}
+  button{
+    flex:1;cursor:pointer;border:1px solid var(--line);background:#1c1c28;color:var(--ink);
+    font:inherit;font-size:13px;padding:9px 10px;border-radius:8px;transition:.12s;
+  }
+  button:hover{background:#262636;border-color:#34344a}
+  button.primary{background:var(--accent);color:#06121f;border-color:transparent;font-weight:600}
+  button.primary:hover{background:#9bd2ff}
+
+  label{display:block;margin-top:14px;font-size:12px;color:var(--muted)}
+  label .val{float:right;color:var(--ink);font-family:var(--mono)}
+  input[type=range]{width:100%;margin-top:7px;accent-color:var(--accent)}
+  .seg{display:flex;gap:6px;margin-top:8px}
+  .seg button{padding:7px 6px;font-size:12px}
+  .seg button[aria-pressed=true]{background:var(--accent);color:#06121f;border-color:transparent;font-weight:600}
+  select{width:100%;margin-top:8px;background:#1c1c28;color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:8px;font:inherit;font-size:13px}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .stat .v{font-family:var(--mono);font-size:20px;margin-top:2px}
+  .stat .v small{font-size:12px;color:var(--muted)}
+  .fd{grid-column:1/3}
+  .fd .v{color:var(--accent)}
+  .hint{color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.5}
+  kbd{font-family:var(--mono);background:#1c1c28;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage">
+    <canvas id="c"></canvas>
+  </div>
+
+  <aside>
+    <h1>Diffusion-Limited Aggregation</h1>
+    <p class="sub">
+      Particles wander randomly until they touch the cluster, then stick — building a
+      branching fractal. The shape's roughness is captured by its
+      <b>fractal dimension</b> (≈ 1.71 for classic DLA).
+      <br>Ported from my undergrad computational-physics C/OpenGL coursework.
+    </p>
+
+    <div class="panel">
+      <div class="row">
+        <button id="play" class="primary">Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+
+      <label>Speed <span class="val" id="speedV"></span></label>
+      <input type="range" id="speed" min="1" max="400" value="120">
+
+      <label>Sticking probability <span class="val" id="probV"></span></label>
+      <input type="range" id="prob" min="5" max="100" value="100">
+
+      <label>Sticking neighbourhood</label>
+      <div class="seg" id="nbh">
+        <button data-v="4" aria-pressed="true">4-neighbour</button>
+        <button data-v="8" aria-pressed="false">8-neighbour (bushier)</button>
+      </div>
+
+      <label>Seed shape</label>
+      <select id="seed">
+        <option value="point">Point</option>
+        <option value="line">Line</option>
+        <option value="cross">Cross</option>
+        <option value="square">5 × 5 square</option>
+        <option value="ring">Ring</option>
+      </select>
+
+      <label>Colour by</label>
+      <div class="seg" id="cmode">
+        <button data-v="radius" aria-pressed="true">Radius</button>
+        <button data-v="order" aria-pressed="false">Growth order</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><div class="k">Particles</div><div class="v" id="sN">1</div></div>
+        <div class="stat"><div class="k">Cluster radius</div><div class="v" id="sR">1<small> px</small></div></div>
+        <div class="stat fd"><div class="k">Fractal dimension</div><div class="v" id="sD">—</div></div>
+      </div>
+      <div class="hint">
+        <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. Lower sticking probability lets
+        walkers penetrate deeper before sticking — denser, less wispy clusters.
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const TWOPI = Math.PI*2;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d', {alpha:false});
+
+const N = 601;                 // grid / canvas resolution (1 cell = 1 px)
+const C = (N-1)/2;             // centre
+const MAXR = N/2 - 6;          // stop when cluster reaches here
+cv.width = cv.height = N;
+
+let grid = new Uint8Array(N*N);
+const idx = (x,y)=> y*N + x;
+
+// --- parameters (live) ---
+let running = true;
+let perFrame = 120;            // target sticks per frame
+let prob = 1.0;                // sticking probability
+let neigh = 4;                 // 4 or 8 neighbourhood
+let colorMode = 'radius';
+let seedShape = 'point';
+
+// --- state ---
+let count = 1, rmax = 1, finished = false;
+let wx = 0, wy = 0;            // current walker
+let spawnR = 6, killR = 30;
+
+function updateRadii(){
+  spawnR = Math.min(rmax + 5, MAXR - 2);
+  killR  = spawnR * 2.5 + 12;
+}
+
+function colorFor(r, order){
+  if(colorMode === 'order'){
+    const h = (order * 0.5) % 360;
+    return `hsl(${h} 85% 60%)`;
+  }
+  const f = Math.max(0, Math.min(1, r / MAXR));
+  return `hsl(${45 + f*250} 95% ${58 - f*8}%)`;
+}
+
+function paint(x, y, r, order){
+  ctx.fillStyle = colorFor(r, order);
+  ctx.fillRect(x, y, 1, 1);
+}
+
+function setSeedCell(x, y){
+  grid[idx(x,y)] = 1;
+  const r = Math.hypot(x-C, y-C);
+  if(r > rmax) rmax = r;
+  paint(x, y, r, count);
+  count++;
+}
+
+function reset(){
+  grid.fill(0);
+  ctx.fillStyle = '#08080c';
+  ctx.fillRect(0,0,N,N);
+  count = 0; rmax = 1; finished = false;
+
+  const cx = C|0, cy = C|0;
+  if(seedShape === 'point'){
+    setSeedCell(cx, cy);
+  } else if(seedShape === 'line'){
+    for(let k=-4;k<=4;k++) setSeedCell(cx+k, cy);
+  } else if(seedShape === 'cross'){
+    for(let k=-4;k<=4;k++){ setSeedCell(cx+k, cy); if(k) setSeedCell(cx, cy+k); }
+  } else if(seedShape === 'square'){
+    for(let i=-2;i<=2;i++) for(let j=-2;j<=2;j++) setSeedCell(cx+i, cy+j);
+  } else if(seedShape === 'ring'){
+    const R=7;
+    for(let a=0;a<TWOPI;a+=0.18){
+      const x=Math.round(cx+R*Math.cos(a)), y=Math.round(cy+R*Math.sin(a));
+      if(!grid[idx(x,y)]) setSeedCell(x,y);
+    }
+  }
+  if(rmax < 1) rmax = 1;
+  updateRadii();
+  spawn();
+  render();
+}
+
+function spawn(){
+  const a = Math.random()*TWOPI;
+  wx = Math.round(C + spawnR*Math.cos(a));
+  wy = Math.round(C + spawnR*Math.sin(a));
+}
+
+function touching(x, y){
+  if(x<=0||y<=0||x>=N-1||y>=N-1) return false;
+  if(grid[idx(x+1,y)]||grid[idx(x-1,y)]||grid[idx(x,y+1)]||grid[idx(x,y-1)]) return true;
+  if(neigh===8 &&
+     (grid[idx(x+1,y+1)]||grid[idx(x-1,y-1)]||grid[idx(x+1,y-1)]||grid[idx(x-1,y+1)])) return true;
+  return false;
+}
+
+const DX=[1,-1,0,0], DY=[0,0,1,-1];
+
+// one walker action; returns true if a particle stuck
+function step(){
+  if(touching(wx,wy) && Math.random() < prob){
+    grid[idx(wx,wy)] = 1;
+    const r = Math.hypot(wx-C, wy-C);
+    if(r > rmax){ rmax = r; updateRadii(); }
+    paint(wx, wy, r, count);
+    count++;
+    if(rmax >= MAXR){ finished = true; }
+    spawn();
+    return true;
+  }
+  const r = Math.hypot(wx-C, wy-C);
+  if(r > killR){ spawn(); return false; }
+  if(r > spawnR + 2){                 // far from cluster: safe long jump
+    const mag = r - spawnR, th = Math.random()*TWOPI;
+    wx += Math.round(mag*Math.cos(th));
+    wy += Math.round(mag*Math.sin(th));
+  } else {                            // lattice random walk
+    const d = (Math.random()*4)|0;
+    wx += DX[d]; wy += DY[d];
+  }
+  return false;
+}
+
+// stats
+const sN=document.getElementById('sN'), sR=document.getElementById('sR'), sD=document.getElementById('sD');
+function render(){
+  sN.textContent = count.toLocaleString();
+  sR.innerHTML = Math.round(rmax) + '<small> px</small>';
+  sD.textContent = (count>5 && rmax>1) ? (Math.log(count)/Math.log(rmax)).toFixed(3) : '—';
+}
+
+function frame(){
+  if(running && !finished){
+    let stuck=0, guard=0;
+    const cap = 4_000_000;
+    while(stuck < perFrame && guard < cap){
+      guard++;
+      if(step()) stuck++;
+      if(finished) break;
+    }
+    render();
+    if(finished){ play.textContent='Done'; }
+  }
+  requestAnimationFrame(frame);
+}
+
+// --- controls ---
+const play=document.getElementById('play');
+play.onclick=()=>{ if(finished) return; running=!running; play.textContent=running?'Pause':'Play'; };
+document.getElementById('reset').onclick=()=>{ reset(); running=true; play.textContent='Pause'; };
+
+const speed=document.getElementById('speed'), speedV=document.getElementById('speedV');
+const probEl=document.getElementById('prob'), probV=document.getElementById('probV');
+function syncSpeed(){ perFrame=+speed.value; speedV.textContent=speed.value+'/frame'; }
+function syncProb(){ prob=+probEl.value/100; probV.textContent=prob.toFixed(2); }
+speed.oninput=syncSpeed; probEl.oninput=syncProb; syncSpeed(); syncProb();
+
+function segHandler(id, set){
+  const box=document.getElementById(id);
+  box.onclick=e=>{ const b=e.target.closest('button'); if(!b)return;
+    [...box.children].forEach(x=>x.setAttribute('aria-pressed', x===b));
+    set(b.dataset.v); };
+}
+segHandler('nbh', v=>neigh=+v);
+segHandler('cmode', v=>colorMode=v);
+document.getElementById('seed').onchange=e=>{ seedShape=e.target.value; reset(); running=true; play.textContent='Pause'; };
+
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); play.click(); }
+  else if(e.key==='r'||e.key==='R'){ document.getElementById('reset').click(); }
+});
+
+reset();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

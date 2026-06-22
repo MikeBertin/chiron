@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ising Model — Monte Carlo</title>
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#ffc266; --accent2:#7cc4ff;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 800px at 70% -10%,#1a1610,#0a0a0f 60%);
+    color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;justify-content:center;
+  }
+  .wrap{display:flex;gap:24px;padding:28px;max-width:1140px;width:100%;align-items:flex-start}
+  @media (max-width:900px){.wrap{flex-direction:column;align-items:center}}
+
+  .stage{position:relative;flex:0 0 auto}
+  canvas#c{
+    display:block;width:min(64vh,600px);height:min(64vh,600px);
+    background:#08080c;border:1px solid var(--line);border-radius:10px;
+    image-rendering:pixelated;box-shadow:0 18px 60px -20px #000,0 0 0 1px #000 inset;
+  }
+
+  aside{flex:1 1 340px;min-width:300px;max-width:400px}
+  h1{font-size:18px;margin:0 0 2px;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;line-height:1.5}
+  .sub b{color:var(--accent);font-weight:600}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:8px}
+  button{
+    flex:1;cursor:pointer;border:1px solid var(--line);background:#1c1c28;color:var(--ink);
+    font:inherit;font-size:13px;padding:9px 10px;border-radius:8px;transition:.12s;
+  }
+  button:hover{background:#262636;border-color:#34344a}
+  button.primary{background:var(--accent);color:#241704;border-color:transparent;font-weight:600}
+  button.primary:hover{background:#ffd591}
+  button.sweep{background:#1c1c28;color:var(--accent2);border-color:#2a3a4a}
+  button.sweep[aria-pressed=true]{background:var(--accent2);color:#06121f;border-color:transparent;font-weight:600}
+
+  label{display:block;margin-top:14px;font-size:12px;color:var(--muted)}
+  label .val{float:right;color:var(--ink);font-family:var(--mono)}
+  input[type=range]{width:100%;margin-top:7px;accent-color:var(--accent)}
+  input#temp{accent-color:var(--accent)}
+  .seg{display:flex;gap:6px;margin-top:8px}
+  .seg button{padding:7px 6px;font-size:12px}
+  .seg button[aria-pressed=true]{background:var(--accent);color:#241704;border-color:transparent;font-weight:600}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .stat .v{font-family:var(--mono);font-size:20px;margin-top:2px}
+  .stat .v small{font-size:12px;color:var(--muted)}
+  canvas#plot{width:100%;height:auto;display:block;margin-top:4px;border-radius:8px;background:#0e0e16;border:1px solid var(--line)}
+  .hint{color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.5}
+  .ptitle{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .ptitle b{color:var(--ink);font-weight:600}
+  kbd{font-family:var(--mono);background:#1c1c28;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage"><canvas id="c"></canvas></div>
+
+  <aside>
+    <h1>2D Ising Model</h1>
+    <p class="sub">
+      A lattice of magnetic spins flipping by the <b>Metropolis</b> rule. Cool it and
+      domains align into a magnet; heat past the <b>critical temperature</b>
+      (T<sub>c</sub> ≈ 2.269) and order dissolves into noise.
+      <br>Ported from my undergrad computational-physics C/OpenGL coursework.
+    </p>
+
+    <div class="panel">
+      <div class="row">
+        <button id="play" class="primary">Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+
+      <label>Temperature <span class="val" id="tempV"></span></label>
+      <input type="range" id="temp" min="0.05" max="4" step="0.01" value="2.27">
+
+      <label>Magnetic field <span class="val" id="fieldV"></span></label>
+      <input type="range" id="field" min="-1.5" max="1.5" step="0.05" value="0">
+
+      <label>Speed <span class="val" id="speedV"></span></label>
+      <input type="range" id="speed" min="1" max="40" value="8">
+
+      <label>Initial state</label>
+      <div class="seg" id="start">
+        <button data-v="ordered" aria-pressed="true">Ordered</button>
+        <button data-v="random" aria-pressed="false">Random (hot)</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><div class="k">Temperature</div><div class="v" id="sT">2.27</div></div>
+        <div class="stat"><div class="k">Magnetisation</div><div class="v" id="sM">—</div></div>
+        <div class="stat"><div class="k">Energy / spin</div><div class="v" id="sE">—</div></div>
+        <div class="stat"><div class="k">Lattice</div><div class="v" id="sL">—</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="ptitle"><b>Magnetisation curve</b> &nbsp;|M| vs temperature</p>
+      <canvas id="plot" width="340" height="190"></canvas>
+      <button id="sweepBtn" class="sweep" style="margin-top:10px;width:100%">▶ Auto-sweep temperature (trace the transition)</button>
+      <div class="hint">
+        <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. Auto-sweep ramps T from cold to hot,
+        plotting the average |M| at each step — the sharp drop near T<sub>c</sub> is the phase transition.
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const L = 160, N = L*L;
+cv.width = cv.height = L;
+
+let s = new Int8Array(N);
+let M = 0, E = 0;
+let temperature = 2.27, field = 0;
+let running = true, perFrame = 8, startMode = 'ordered';
+
+// Metropolis acceptance lookup: snn ∈ {-4,-2,0,2,4} (index 0..4), sij ∈ {-1,+1} (index 0,1)
+const dEtab = [[0,0],[0,0],[0,0],[0,0],[0,0]];
+const probtab = [[0,0],[0,0],[0,0],[0,0],[0,0]];
+function getprobs(){
+  for(let sj=0;sj<2;sj++){ const sij=2*sj-1;
+    for(let ki=0;ki<5;ki++){ const snn=2*ki-4;
+      const dE = 2*sij*(snn+field);
+      dEtab[ki][sj] = dE;
+      probtab[ki][sj] = Math.exp(-dE/temperature);
+    }}
+}
+
+// rendering via ImageData (1 cell = 1 px)
+const img = ctx.createImageData(L,L);
+const buf = new Uint32Array(img.data.buffer);
+const rgba = (r,g,b)=> (255<<24)|(b<<16)|(g<<8)|r;       // little-endian ABGR
+const UP = rgba(255,196,96), DOWN = rgba(30,34,60);
+function render(){
+  for(let k=0;k<N;k++) buf[k] = s[k]>0 ? UP : DOWN;
+  ctx.putImageData(img,0,0);
+}
+
+function computeME(){
+  let m=0, bonds=0;
+  for(let i=0;i<L;i++){ const ic=i*L, ip=((i+1)%L)*L;
+    for(let j=0;j<L;j++){
+      const sij=s[ic+j]; m+=sij;
+      bonds += sij*( s[ic+((j+1)%L)] + s[ip+j] );   // right + down bond (each counted once)
+    }
+  }
+  M = m;
+  E = -bonds - field*M;     // E = -Σ s_i s_j - h Σ s_i   (J=1)
+}
+
+function reset(){
+  if(startMode==='ordered'){ s.fill(1); }
+  else { for(let k=0;k<N;k++) s[k] = Math.random()<0.5 ? 1 : -1; }
+  computeME();
+  stopSweep();
+  plotPts.length = 0;
+  getprobs();
+  render(); drawPlot(); updateStats();
+}
+
+function sweep(){
+  for(let i=0;i<L;i++){
+    const im=((i-1+L)%L)*L, ip=((i+1)%L)*L, ic=i*L;
+    for(let j=0;j<L;j++){
+      const sij=s[ic+j];
+      const snn = s[im+j]+s[ip+j]+s[ic+((j+1)%L)]+s[ic+((j-1+L)%L)];
+      const ki=(snn+4)>>1, sj=(sij+1)>>1;
+      if(dEtab[ki][sj]<=0 || Math.random()<probtab[ki][sj]){
+        s[ic+j]=-sij; E+=dEtab[ki][sj]; M-=2*sij;
+      }
+    }
+  }
+}
+
+// --- magnetisation-vs-T plot ---
+const plot = document.getElementById('plot'), px = plot.getContext('2d');
+const PW=340, PH=190, ml=34, mr=10, mt=12, mb=24;
+const Tmax=4, Tc=2.269;
+let plotPts = [];                          // {t, m}
+const X = t => ml + (t/Tmax)*(PW-ml-mr);
+const Y = m => mt + (1-m)*(PH-mt-mb);
+function drawPlot(){
+  px.clearRect(0,0,PW,PH);
+  px.strokeStyle='#2a2a38'; px.fillStyle='#6b6b80'; px.font='10px ui-monospace,monospace';
+  px.lineWidth=1;
+  // axes
+  px.beginPath(); px.moveTo(ml,mt); px.lineTo(ml,PH-mb); px.lineTo(PW-mr,PH-mb); px.stroke();
+  for(let m=0;m<=1;m+=0.5){ const y=Y(m); px.fillText(m.toFixed(1), 8, y+3);
+    px.strokeStyle='#1c1c28'; px.beginPath(); px.moveTo(ml,y); px.lineTo(PW-mr,y); px.stroke(); }
+  for(let t=0;t<=Tmax;t++){ const x=X(t); px.fillStyle='#6b6b80'; px.fillText(t, x-3, PH-mb+13); }
+  px.fillText('|M|', 8, mt-2); px.fillText('T', PW-mr-6, PH-2);
+  // Tc marker
+  px.strokeStyle='#7cc4ff'; px.setLineDash([3,3]);
+  px.beginPath(); px.moveTo(X(Tc),mt); px.lineTo(X(Tc),PH-mb); px.stroke(); px.setLineDash([]);
+  px.fillStyle='#7cc4ff'; px.fillText('Tc', X(Tc)-6, mt+8);
+  // data
+  if(plotPts.length){
+    px.strokeStyle='#ffc266'; px.lineWidth=1.5; px.beginPath();
+    plotPts.forEach((p,i)=>{ const x=X(p.t), y=Y(p.m); i?px.lineTo(x,y):px.moveTo(x,y); });
+    px.stroke();
+    px.fillStyle='#ffd591';
+    plotPts.forEach(p=>{ px.beginPath(); px.arc(X(p.t),Y(p.m),1.6,0,7); px.fill(); });
+  }
+  // live marker (current state)
+  px.fillStyle='#fff'; px.beginPath();
+  px.arc(X(temperature), Y(Math.abs(M/N)), 3, 0, 7); px.fill();
+}
+
+// --- auto-sweep state machine ---
+let sweeping=false, sweepCount=0, sumM=0, measCount=0;
+const EQ=12, MEAS=28, dT=0.05, Tstart=0.1;
+const sweepBtn=document.getElementById('sweepBtn');
+function startSweep(){
+  sweeping=true; sweepBtn.setAttribute('aria-pressed','true');
+  sweepBtn.textContent='■ Stop auto-sweep';
+  plotPts.length=0; sweepCount=0; sumM=0; measCount=0;
+  temperature=Tstart; setTemp(temperature); getprobs();
+  running=true; play.textContent='Pause';
+}
+function stopSweep(){
+  sweeping=false; sweepBtn.setAttribute('aria-pressed','false');
+  sweepBtn.textContent='▶ Auto-sweep temperature (trace the transition)';
+}
+function sweepTick(){
+  sweepCount++;
+  if(sweepCount>EQ){ sumM += Math.abs(M); measCount++; }
+  if(sweepCount>=EQ+MEAS){
+    plotPts.push({t:temperature, m:sumM/measCount/N});
+    temperature = Math.round((temperature+dT)*1000)/1000;
+    sweepCount=0; sumM=0; measCount=0;
+    setTemp(temperature); getprobs(); drawPlot();
+    if(temperature>Tmax) stopSweep();
+  }
+}
+
+// --- stats ---
+const sT=document.getElementById('sT'), sM=document.getElementById('sM'),
+      sE=document.getElementById('sE'), sL=document.getElementById('sL');
+function updateStats(){
+  sT.textContent = temperature.toFixed(2);
+  sM.textContent = (M/N).toFixed(3);
+  sE.textContent = (E/N).toFixed(3);
+  sL.innerHTML = L+' × '+L;
+}
+
+function frame(){
+  if(running){
+    for(let k=0;k<perFrame;k++){ sweep(); if(sweeping) sweepTick(); }
+    render(); drawPlot(); updateStats();
+  }
+  requestAnimationFrame(frame);
+}
+
+// --- controls ---
+const play=document.getElementById('play');
+play.onclick=()=>{ running=!running; play.textContent=running?'Pause':'Play'; };
+document.getElementById('reset').onclick=()=>{ reset(); running=true; play.textContent='Pause'; };
+
+const tempEl=document.getElementById('temp'), tempV=document.getElementById('tempV');
+const fieldEl=document.getElementById('field'), fieldV=document.getElementById('fieldV');
+const speed=document.getElementById('speed'), speedV=document.getElementById('speedV');
+function setTemp(t){ tempEl.value=t; tempV.textContent='T = '+(+t).toFixed(2); }
+tempEl.oninput=()=>{ if(sweeping) stopSweep(); temperature=+tempEl.value; tempV.textContent='T = '+temperature.toFixed(2); getprobs(); };
+fieldEl.oninput=()=>{ field=+fieldEl.value; fieldV.textContent=(field>=0?'+':'')+field.toFixed(2); getprobs(); };
+speed.oninput=()=>{ perFrame=+speed.value; speedV.textContent=speed.value+' sweeps/frame'; };
+setTemp(temperature); fieldEl.oninput(); speed.oninput();
+
+const startBox=document.getElementById('start');
+startBox.onclick=e=>{ const b=e.target.closest('button'); if(!b)return;
+  [...startBox.children].forEach(x=>x.setAttribute('aria-pressed', x===b));
+  startMode=b.dataset.v; reset(); running=true; play.textContent='Pause'; };
+
+sweepBtn.onclick=()=>{ sweeping ? stopSweep() : startSweep(); };
+
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); play.click(); }
+  else if(e.key==='r'||e.key==='R'){ document.getElementById('reset').click(); }
+});
+
+reset();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

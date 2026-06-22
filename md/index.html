@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Molecular Dynamics — Lennard-Jones</title>
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#5fd0c5; --accent2:#ff7a59;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 800px at 70% -10%,#0e1a1a,#0a0a0f 60%);
+    color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;justify-content:center;
+  }
+  .wrap{display:flex;gap:24px;padding:28px;max-width:1140px;width:100%;align-items:flex-start}
+  @media (max-width:900px){.wrap{flex-direction:column;align-items:center}}
+
+  .stage{flex:0 0 auto}
+  canvas#c{
+    display:block;width:min(64vh,600px);height:auto;
+    background:#06070b;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 18px 60px -20px #000,0 0 0 1px #000 inset;
+  }
+
+  aside{flex:1 1 340px;min-width:300px;max-width:400px}
+  h1{font-size:18px;margin:0 0 2px;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;line-height:1.5}
+  .sub b{color:var(--accent);font-weight:600}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:8px}
+  button{
+    flex:1;cursor:pointer;border:1px solid var(--line);background:#1c1c28;color:var(--ink);
+    font:inherit;font-size:13px;padding:9px 10px;border-radius:8px;transition:.12s;
+  }
+  button:hover{background:#262636;border-color:#34344a}
+  button.primary{background:var(--accent);color:#04201d;border-color:transparent;font-weight:600}
+  button.primary:hover{background:#80e0d6}
+
+  label{display:block;margin-top:14px;font-size:12px;color:var(--muted)}
+  label .val{float:right;color:var(--ink);font-family:var(--mono)}
+  input[type=range]{width:100%;margin-top:7px;accent-color:var(--accent)}
+  .seg{display:flex;gap:6px;margin-top:8px}
+  .seg button{padding:7px 6px;font-size:12px}
+  .seg button[aria-pressed=true]{background:var(--accent);color:#04201d;border-color:transparent;font-weight:600}
+  .quick{display:flex;gap:6px;margin-top:10px}
+  .quick button{font-size:12px;padding:8px}
+  .quick .melt{color:var(--accent2);border-color:#4a2f28}
+  .quick .freeze{color:#7cc4ff;border-color:#2a3a4a}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .stat .v{font-family:var(--mono);font-size:20px;margin-top:2px}
+  canvas#plot{width:100%;height:auto;display:block;margin-top:4px;border-radius:8px;background:#0e0e16;border:1px solid var(--line)}
+  .ptitle{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .ptitle b{color:var(--ink);font-weight:600}
+  .hint{color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.5}
+  kbd{font-family:var(--mono);background:#1c1c28;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage"><canvas id="c"></canvas></div>
+
+  <aside>
+    <h1>Molecular Dynamics</h1>
+    <p class="sub">
+      Atoms interacting through the <b>Lennard-Jones</b> potential, integrated with the
+      Verlet algorithm. Start as a crystal, then heat it to <b>melt</b> into a liquid —
+      or cool the liquid and watch it re-freeze. Colour shows particle speed.
+      <br>Ported from my undergrad computational-physics C/OpenGL coursework.
+    </p>
+
+    <div class="panel">
+      <div class="row">
+        <button id="play" class="primary">Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+
+      <label>Target temperature <span class="val" id="tempV"></span></label>
+      <input type="range" id="temp" min="0.02" max="2" step="0.01" value="0.30">
+      <div class="quick">
+        <button class="freeze" id="freeze">❄ Freeze (T=0.1)</button>
+        <button class="melt" id="melt">🔥 Melt (T=1.0)</button>
+      </div>
+
+      <label>Thermostat</label>
+      <div class="seg" id="thermo">
+        <button data-v="on" aria-pressed="true">On (hold T)</button>
+        <button data-v="off" aria-pressed="false">Off (free energy)</button>
+      </div>
+
+      <label>Speed <span class="val" id="speedV"></span></label>
+      <input type="range" id="speed" min="1" max="40" value="15">
+    </div>
+
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><div class="k">Temperature</div><div class="v" id="sT">—</div></div>
+        <div class="stat"><div class="k">Total E / atom</div><div class="v" id="sE">—</div></div>
+        <div class="stat"><div class="k">Potential / atom</div><div class="v" id="sP">—</div></div>
+        <div class="stat"><div class="k">Atoms</div><div class="v" id="sN">—</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="ptitle"><b>Temperature</b> &nbsp;vs time</p>
+      <canvas id="plot" width="340" height="150"></canvas>
+      <div class="hint">
+        <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. 2D Lennard-Jones melts around
+        T ≈ 0.4–0.7. Turn the thermostat <b>off</b> to conserve energy and watch the
+        crystal and liquid coexist.
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ---------- model: 2D Lennard-Jones, reduced units (ε=σ=m=1), fully periodic ----------
+const NX=18, NY=18, N=NX*NY;          // triangular lattice -> 324 atoms
+const A=1.122;                         // lattice spacing (LJ minimum)
+const DYR=A*Math.sqrt(3)/2;            // triangular row spacing
+const Lx=NX*A, Ly=NY*DYR;              // periodic box
+const RC2=9.0;                         // cutoff radius squared (rc=3)
+const dt=0.005;
+
+const x=new Float64Array(N), y=new Float64Array(N);
+const vx=new Float64Array(N), vy=new Float64Array(N);
+const fx=new Float64Array(N), fy=new Float64Array(N);
+
+let temperature=0, potential=0, kinetic=0;
+let targetT=0.30, thermostat=true;
+let running=true, perFrame=15;
+
+function gaussian(){ // Box–Muller
+  let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function initLattice(T0){
+  let k=0;
+  for(let r=0;r<NY;r++){
+    for(let c=0;c<NX;c++){
+      x[k]=((c + (r&1)*0.5)*A) % Lx;
+      y[k]=r*DYR;
+      k++;
+    }
+  }
+  // Maxwell–Boltzmann velocities, then remove centre-of-mass drift
+  const sd=Math.sqrt(T0);
+  let mvx=0,mvy=0;
+  for(let i=0;i<N;i++){ vx[i]=gaussian()*sd; vy[i]=gaussian()*sd; mvx+=vx[i]; mvy+=vy[i]; }
+  mvx/=N; mvy/=N;
+  for(let i=0;i<N;i++){ vx[i]-=mvx; vy[i]-=mvy; }
+  computeForces();
+  plotBuf.length=0;
+}
+
+function computeForces(){
+  potential=0;
+  fx.fill(0); fy.fill(0);
+  for(let i=0;i<N;i++){
+    const xi=x[i], yi=y[i];
+    for(let j=i+1;j<N;j++){
+      let dx=xi-x[j], dy=yi-y[j];
+      dx-=Lx*Math.round(dx/Lx);          // minimum image
+      dy-=Ly*Math.round(dy/Ly);
+      const r2=dx*dx+dy*dy;
+      if(r2<RC2 && r2>1e-6){
+        const ir2=1/r2, ir6=ir2*ir2*ir2;
+        const fc=24*ir2*ir6*(2*ir6-1);   // (F/r) for LJ
+        fx[i]+=fc*dx; fy[i]+=fc*dy;
+        fx[j]-=fc*dx; fy[j]-=fc*dy;
+        potential+=4*ir6*(ir6-1);
+      }
+    }
+  }
+}
+
+function stepVerlet(){
+  const h=0.5*dt;
+  for(let i=0;i<N;i++){            // half kick + drift
+    vx[i]+=h*fx[i]; vy[i]+=h*fy[i];
+    x[i]+=vx[i]*dt; y[i]+=vy[i]*dt;
+    x[i]=((x[i]%Lx)+Lx)%Lx;       // wrap into box
+    y[i]=((y[i]%Ly)+Ly)%Ly;
+  }
+  computeForces();
+  let ke=0;
+  for(let i=0;i<N;i++){            // second half kick
+    vx[i]+=h*fx[i]; vy[i]+=h*fy[i];
+    ke+=vx[i]*vx[i]+vy[i]*vy[i];
+  }
+  kinetic=0.5*ke;
+  temperature=kinetic/N;          // 2D: <KE>/N = kT  (k=1)
+  if(thermostat && temperature>1e-6){
+    const lambda=Math.sqrt(1 + (dt/0.1)*(targetT/temperature - 1));
+    for(let i=0;i<N;i++){ vx[i]*=lambda; vy[i]*=lambda; }
+  }
+}
+
+// ---------- rendering ----------
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const W=600, H=Math.round(W*Ly/Lx);
+cv.width=W; cv.height=H;
+const sx=W/Lx, sy=H/Ly, RAD=0.5*sx;     // atom radius in px (σ/2)
+function speedColor(s){
+  const f=Math.max(0,Math.min(1,s/2.2));
+  return `hsl(${210*(1-f)} 90% ${52+f*8}%)`;   // blue (slow) -> red (fast)
+}
+function render(){
+  ctx.fillStyle='#06070b'; ctx.fillRect(0,0,W,H);
+  for(let i=0;i<N;i++){
+    const s=Math.sqrt(vx[i]*vx[i]+vy[i]*vy[i]);
+    ctx.fillStyle=speedColor(s);
+    ctx.beginPath();
+    ctx.arc(x[i]*sx, H-y[i]*sy, RAD, 0, 6.2832);
+    ctx.fill();
+  }
+}
+
+// ---------- temperature-vs-time plot ----------
+const plot=document.getElementById('plot'), pc=plot.getContext('2d');
+const PW=340, PH=150, ml=34, mr=8, mt=10, mb=18, MAXPTS=240;
+let plotBuf=[];
+function drawPlot(){
+  pc.clearRect(0,0,PW,PH);
+  let ymax=Math.max(targetT*1.6, 0.4);
+  for(const t of plotBuf) if(t>ymax) ymax=t;
+  ymax=Math.ceil(ymax*5)/5;
+  const X=i=> ml + (i/(MAXPTS-1))*(PW-ml-mr);
+  const Y=t=> mt + (1-t/ymax)*(PH-mt-mb);
+  pc.strokeStyle='#2a2a38'; pc.fillStyle='#6b6b80'; pc.font='10px ui-monospace,monospace'; pc.lineWidth=1;
+  pc.beginPath(); pc.moveTo(ml,mt); pc.lineTo(ml,PH-mb); pc.lineTo(PW-mr,PH-mb); pc.stroke();
+  for(let g=0;g<=1;g+=0.5){ const yy=Y(ymax*g); pc.fillText((ymax*g).toFixed(1),6,yy+3);
+    pc.strokeStyle='#1c1c28'; pc.beginPath(); pc.moveTo(ml,yy); pc.lineTo(PW-mr,yy); pc.stroke(); }
+  pc.fillStyle='#6b6b80'; pc.fillText('T',6,mt+2);
+  if(thermostat){ const ty=Y(targetT); pc.strokeStyle='#5fd0c5'; pc.setLineDash([4,3]);
+    pc.beginPath(); pc.moveTo(ml,ty); pc.lineTo(PW-mr,ty); pc.stroke(); pc.setLineDash([]);
+    pc.fillStyle='#5fd0c5'; pc.fillText('target',PW-mr-38,ty-3); }
+  if(plotBuf.length>1){
+    pc.strokeStyle='#ff7a59'; pc.lineWidth=1.5; pc.beginPath();
+    plotBuf.forEach((t,i)=>{ const xx=X(i+ (MAXPTS-plotBuf.length)), yy=Y(t); i?pc.lineTo(xx,yy):pc.moveTo(xx,yy); });
+    pc.stroke();
+  }
+}
+
+// ---------- stats ----------
+const sT=document.getElementById('sT'), sE=document.getElementById('sE'),
+      sP=document.getElementById('sP'), sN=document.getElementById('sN');
+function updateStats(){
+  sT.textContent=temperature.toFixed(3);
+  sE.textContent=((kinetic+potential)/N).toFixed(3);
+  sP.textContent=(potential/N).toFixed(3);
+  sN.textContent=N;
+}
+
+let frameTick=0;
+function frame(){
+  if(running){
+    for(let k=0;k<perFrame;k++) stepVerlet();
+    render();
+    if((frameTick++ & 1)===0){       // sample T every other frame
+      plotBuf.push(temperature);
+      if(plotBuf.length>MAXPTS) plotBuf.shift();
+    }
+    drawPlot(); updateStats();
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- controls ----------
+const play=document.getElementById('play');
+play.onclick=()=>{ running=!running; play.textContent=running?'Pause':'Play'; };
+document.getElementById('reset').onclick=()=>{ initLattice(targetT); running=true; play.textContent='Pause'; };
+
+const tempEl=document.getElementById('temp'), tempV=document.getElementById('tempV');
+const speed=document.getElementById('speed'), speedV=document.getElementById('speedV');
+function setTempLabel(){ tempV.textContent='T = '+targetT.toFixed(2); tempEl.value=targetT; }
+tempEl.oninput=()=>{ targetT=+tempEl.value; tempV.textContent='T = '+targetT.toFixed(2); };
+speed.oninput=()=>{ perFrame=+speed.value; speedV.textContent=speed.value+' steps/frame'; };
+setTempLabel(); speed.oninput();
+
+document.getElementById('freeze').onclick=()=>{ targetT=0.1; setTempLabel(); thermoSet('on'); };
+document.getElementById('melt').onclick  =()=>{ targetT=1.0; setTempLabel(); thermoSet('on'); };
+
+const thermoBox=document.getElementById('thermo');
+function thermoSet(v){
+  thermostat=(v==='on');
+  [...thermoBox.children].forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===v));
+}
+thermoBox.onclick=e=>{ const b=e.target.closest('button'); if(b) thermoSet(b.dataset.v); };
+
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); play.click(); }
+  else if(e.key==='r'||e.key==='R'){ document.getElementById('reset').click(); }
+});
+
+initLattice(targetT);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
