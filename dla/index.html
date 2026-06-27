@@ -25,24 +25,27 @@
     background:radial-gradient(1200px 800px at 70% -10%,#15151f,#0a0a0f 60%);
     color:var(--ink);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    display:flex;justify-content:center;
   }
-  .wrap{display:flex;gap:24px;padding:28px;max-width:1100px;width:100%;align-items:flex-start}
-  @media (max-width:880px){.wrap{flex-direction:column;align-items:center}}
+  .page{max-width:1080px;margin:0 auto;padding:30px 28px 44px}
+  .hero{margin-bottom:22px}
+  h1{font-size:25px;margin:0 0 7px;letter-spacing:-.2px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0;line-height:1.55;max-width:780px}
+  .sub b{color:var(--accent);font-weight:600}
 
-  .stage{position:relative;flex:0 0 auto}
+  .cols{display:flex;gap:22px;align-items:flex-start}
+  @media (max-width:900px){.cols{flex-direction:column;align-items:center}}
+  .col-left{flex:0 0 auto;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:1 1 320px;min-width:300px;max-width:420px;display:flex;flex-direction:column;gap:14px;margin-top:-15px}
+  @media (max-width:900px){.col-right{margin-top:0}}
+
+  .stage{position:relative}
   canvas{
-    display:block;width:min(64vh,600px);height:min(64vh,600px);
+    display:block;width:min(63vh,576px);height:min(63vh,576px);
     background:#08080c;border:1px solid var(--line);border-radius:10px;
     image-rendering:pixelated;box-shadow:0 18px 60px -20px #000,0 0 0 1px #000 inset;
   }
 
-  aside{flex:1 1 320px;min-width:280px;max-width:380px}
-  h1{font-size:18px;margin:0 0 2px;letter-spacing:.2px}
-  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;line-height:1.5}
-  .sub b{color:var(--accent);font-weight:600}
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
   .row{display:flex;gap:8px}
   button{
     flex:1;cursor:pointer;border:1px solid var(--line);background:#1c1c28;color:var(--ink);
@@ -70,69 +73,121 @@
   .hint{color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.5}
   kbd{font-family:var(--mono);background:#1c1c28;border:1px solid var(--line);border-bottom-width:2px;
     border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink)}
+
+  /* "things to notice" quirks section */
+  .notice{margin-top:28px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:760px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  .ncard .why{font-size:12.5px;font-weight:600}
+
+  /* hover-to-explain popovers */
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  #pop{position:fixed;z-index:60;max-width:300px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:13px;text-align:center;color:#e6ebff}
+  #pop .fig{display:block;margin:9px auto 5px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="stage">
-    <canvas id="c"></canvas>
-  </div>
-
-  <aside>
+<div class="page">
+  <header class="hero">
     <h1>Diffusion-Limited Aggregation</h1>
     <p class="sub">
       Particles wander randomly until they touch the cluster, then stick — building a
-      branching fractal. The shape's roughness is captured by its
-      <b>fractal dimension</b> (≈ 1.71 for classic DLA).
-      <br>Ported from my undergrad computational-physics C/OpenGL coursework.
+      <span class="x" data-pop="dla">branching fractal</span>. The shape's roughness is captured by its
+      <span class="x" data-pop="fracdim">fractal dimension</span> (≈ 1.71 for classic DLA).
+      Ported from my undergrad computational-physics C/OpenGL coursework.
     </p>
+  </header>
 
-    <div class="panel">
-      <div class="row">
-        <button id="play" class="primary">Pause</button>
-        <button id="reset">Reset</button>
-      </div>
-
-      <label>Speed <span class="val" id="speedV"></span></label>
-      <input type="range" id="speed" min="1" max="400" value="120">
-
-      <label>Sticking probability <span class="val" id="probV"></span></label>
-      <input type="range" id="prob" min="5" max="100" value="100">
-
-      <label>Sticking neighbourhood</label>
-      <div class="seg" id="nbh">
-        <button data-v="4" aria-pressed="true">4-neighbour</button>
-        <button data-v="8" aria-pressed="false">8-neighbour (bushier)</button>
-      </div>
-
-      <label>Seed shape</label>
-      <select id="seed">
-        <option value="point">Point</option>
-        <option value="line">Line</option>
-        <option value="cross">Cross</option>
-        <option value="square">5 × 5 square</option>
-        <option value="ring">Ring</option>
-      </select>
-
-      <label>Colour by</label>
-      <div class="seg" id="cmode">
-        <button data-v="radius" aria-pressed="true">Radius</button>
-        <button data-v="order" aria-pressed="false">Growth order</button>
-      </div>
+  <div class="cols">
+    <div class="col-left">
+      <div class="stage"><canvas id="c"></canvas></div>
     </div>
 
-    <div class="panel">
-      <div class="stats">
-        <div class="stat"><div class="k">Particles</div><div class="v" id="sN">1</div></div>
-        <div class="stat"><div class="k">Cluster radius</div><div class="v" id="sR">1<small> px</small></div></div>
-        <div class="stat fd"><div class="k">Fractal dimension</div><div class="v" id="sD">—</div></div>
+    <div class="col-right">
+      <div class="panel">
+        <div class="row">
+          <button id="play" class="primary">Pause</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <label>Speed <span class="val" id="speedV"></span></label>
+        <input type="range" id="speed" min="1" max="400" value="120">
+
+        <label><span class="x" data-pop="sticking">Sticking probability</span> <span class="val" id="probV"></span></label>
+        <input type="range" id="prob" min="5" max="100" value="100">
+
+        <label>Sticking neighbourhood</label>
+        <div class="seg" id="nbh">
+          <button data-v="4" aria-pressed="true">4-neighbour</button>
+          <button data-v="8" aria-pressed="false">8-neighbour (bushier)</button>
+        </div>
+
+        <label>Seed shape</label>
+        <select id="seed">
+          <option value="point">Point</option>
+          <option value="line">Line</option>
+          <option value="cross">Cross</option>
+          <option value="square">5 × 5 square</option>
+          <option value="ring">Ring</option>
+        </select>
+
+        <label>Colour by</label>
+        <div class="seg" id="cmode">
+          <button data-v="radius" aria-pressed="true">Radius</button>
+          <button data-v="order" aria-pressed="false">Growth order</button>
+        </div>
       </div>
-      <div class="hint">
-        <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. Lower sticking probability lets
-        walkers penetrate deeper before sticking — denser, less wispy clusters.
+
+      <div class="panel">
+        <div class="stats">
+          <div class="stat"><div class="k">Particles</div><div class="v" id="sN">1</div></div>
+          <div class="stat"><div class="k">Cluster radius</div><div class="v" id="sR">1<small> px</small></div></div>
+          <div class="stat fd"><div class="k">Fractal dimension</div><div class="v" id="sD">—</div></div>
+        </div>
+        <div class="hint">
+          <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. Lower sticking probability lets
+          walkers penetrate deeper before sticking — denser, less wispy clusters.
+        </div>
       </div>
     </div>
-  </aside>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>Why it branches</h3>
+        <p>New particles almost always hit an outer tip first — the branches shadow the bays behind them, so the inside is starved.</p>
+        <span class="x why" data-pop="screening">The screening effect</span>
+      </div>
+      <div class="ncard">
+        <h3>Self-similarity</h3>
+        <p>Zoom into any branch and it looks like a smaller copy of the whole cluster — the same pattern at every scale.</p>
+        <span class="x why" data-pop="selfsimilar">What "fractal" means</span>
+      </div>
+      <div class="ncard">
+        <h3>It forgets its seed</h3>
+        <p>Point, line, ring or block; sticky or not — the dimension still lands near 1.71. The big-scale shape forgets the details.</p>
+        <span class="x why" data-pop="universality">Why that matters</span>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -308,6 +363,99 @@ addEventListener('keydown', e=>{
 
 reset();
 requestAnimationFrame(frame);
+</script>
+
+<div id="pop" role="tooltip"></div>
+<script>
+// ---- hover/tap-to-explain popovers ----
+const POP = {
+  dla: { title:'Diffusion-limited aggregation', html:`
+    <p>Release a particle far away and let it <b>random-walk</b> until it bumps into the cluster,
+       then freeze it there. Repeat a few thousand times. That's the whole algorithm — yet it
+       grows these intricate branches.</p>
+    <p class="muted">"Diffusion-limited" because growth is paced by how particles <i>wander</i> in,
+       not by any chemistry. The same process shapes mineral dendrites, soot, and electrodeposits.</p>` },
+
+  fracdim: { title:'Fractal dimension', html:`
+    <p>How the particle count grows with cluster radius. A solid disc scales as r² (dimension 2),
+       a thin line as r¹. DLA sits in between — about <b>1.71</b> — neither line nor filled area.</p>
+    <div class="eq">N(r) ∝ r<sup>D</sup>,&nbsp;&nbsp;D ≈ 1.71</div>
+    <svg class="fig" width="230" height="66" viewBox="0 0 230 66" xmlns="http://www.w3.org/2000/svg">
+      <line x1="18" y1="34" x2="58" y2="34" stroke="#7cc4ff" stroke-width="2.5"/>
+      <text x="38" y="60" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">D=1</text>
+      <path d="M115 52 V38 M115 38 l-10 -10 M115 38 l10 -10 M105 28 l-6 -8 M105 28 l5 -8 M125 28 l-5 -8 M125 28 l6 -8"
+            stroke="#7cc4ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <text x="115" y="60" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">≈1.71</text>
+      <circle cx="200" cy="33" r="14" fill="#7cc4ff"/>
+      <text x="200" y="60" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">D=2</text>
+    </svg>
+    <p class="muted">Read live from the panel: D = log N ⁄ log r.</p>` },
+
+  sticking: { title:'Sticking probability', html:`
+    <p>The chance a walker sticks when it first touches the cluster. At <b>1.0</b> it grabs on
+       contact, so tips capture everything and growth is wispy and open. Lower it and walkers
+       bounce around, <b>penetrating into the bays</b> before sticking.</p>
+    <p class="muted">Lower probability → denser, more compact clusters. It tunes the balance between
+       branching and filling in.</p>` },
+
+  screening: { title:'Screening — why it branches', html:`
+    <p>A wandering particle almost always reaches an <b>outer tip</b> first. The protruding branches
+       cast a "shadow" that <b>screens</b> the inner bays, so they hardly ever get fed.</p>
+    <svg class="fig" width="190" height="60" viewBox="0 0 190 60" xmlns="http://www.w3.org/2000/svg">
+      <rect x="25" y="48" width="140" height="6" rx="2" fill="#3f5f78"/>
+      <rect x="52" y="24" width="7" height="26" fill="#7cc4ff"/>
+      <rect x="94" y="14" width="7" height="36" fill="#7cc4ff"/>
+      <rect x="132" y="28" width="7" height="22" fill="#7cc4ff"/>
+      <g stroke="#ffd27f" stroke-width="1.6" fill="none" stroke-linecap="round">
+        <path d="M55.5 4 v11"/><path d="M51 11 l4.5 5 4.5 -5"/>
+        <path d="M97.5 1 v9"/><path d="M93 7 l4.5 5 4.5 -5"/>
+        <path d="M135.5 8 v11"/><path d="M131 15 l4.5 5 4.5 -5"/>
+      </g>
+    </svg>
+    <p class="muted">Tips grow faster, stick out further, and screen even more — a runaway feedback
+       that turns a blob into a fractal. It's the heart of the instability.</p>` },
+
+  selfsimilar: { title:'Self-similarity', html:`
+    <p>Zoom into any branch and it looks like a smaller copy of the whole cluster — the same
+       arms-off-arms pattern repeats at every scale. That <b>scale invariance</b> is what "fractal"
+       really means.</p>
+    <p class="muted">There's no special size between a single particle and the whole aggregate: it
+       looks statistically the same however far you zoom in.</p>` },
+
+  universality: { title:'Universality', html:`
+    <p>Start from a point, a line, a ring or a 5×5 block; stick on contact or only sometimes — the
+       final <b>dimension still lands near 1.71</b>. The large-scale shape forgets the details it
+       grew from.</p>
+    <p class="muted">That robustness is why one model describes so many unrelated systems — coral,
+       soot, bacterial colonies, electrodeposition — all sharing the same growth rule.</p>` },
+};
+(function(){
+  const pop=document.getElementById('pop'); let pinned=null;
+  function show(el){
+    const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html;
+    pop.classList.add('show');
+    const r=el.getBoundingClientRect(), p=pop.getBoundingClientRect(), m=10;
+    let left=Math.max(m, Math.min(r.left+r.width/2-p.width/2, innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px'; pop.style.top=top+'px';
+  }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation();
+      if(pinned===el){ pinned=null; hide(); } else { pinned=el; show(el); } });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){ pinned=null; hide(); } });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){ pinned=null; hide(); } });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); }, true);
+})();
 </script>
 </body>
 </html>

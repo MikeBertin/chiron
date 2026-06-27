@@ -25,24 +25,27 @@
     background:radial-gradient(1200px 800px at 70% -10%,#1a1610,#0a0a0f 60%);
     color:var(--ink);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    display:flex;justify-content:center;
   }
-  .wrap{display:flex;gap:24px;padding:28px;max-width:1140px;width:100%;align-items:flex-start}
-  @media (max-width:900px){.wrap{flex-direction:column;align-items:center}}
+  .page{max-width:1080px;margin:0 auto;padding:30px 28px 44px}
+  .hero{margin-bottom:22px}
+  h1{font-size:25px;margin:0 0 7px;letter-spacing:-.2px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0;line-height:1.55;max-width:780px}
+  .sub b{color:var(--accent);font-weight:600}
 
-  .stage{position:relative;flex:0 0 auto}
+  .cols{display:flex;gap:22px;align-items:flex-start}
+  @media (max-width:900px){.cols{flex-direction:column;align-items:center}}
+  .col-left{flex:0 0 auto;display:flex;flex-direction:column;gap:29px}
+  .col-right{flex:1 1 320px;min-width:300px;max-width:420px;display:flex;flex-direction:column;gap:14px;margin-top:-15px}
+  @media (max-width:900px){.col-right{margin-top:0}}
+
+  .stage{position:relative}
   canvas#c{
-    display:block;width:min(64vh,600px);height:min(64vh,600px);
+    display:block;width:min(60vh,560px);height:min(60vh,560px);
     background:#08080c;border:1px solid var(--line);border-radius:10px;
     image-rendering:pixelated;box-shadow:0 18px 60px -20px #000,0 0 0 1px #000 inset;
   }
 
-  aside{flex:1 1 340px;min-width:300px;max-width:400px}
-  h1{font-size:18px;margin:0 0 2px;letter-spacing:.2px}
-  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;line-height:1.5}
-  .sub b{color:var(--accent);font-weight:600}
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
   .row{display:flex;gap:8px}
   button{
     flex:1;cursor:pointer;border:1px solid var(--line);background:#1c1c28;color:var(--ink);
@@ -62,7 +65,8 @@
   .seg button{padding:7px 6px;font-size:12px}
   .seg button[aria-pressed=true]{background:var(--accent);color:#241704;border-color:transparent;font-weight:600}
 
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 14px}
+  @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
   .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
   .stat .v{font-family:var(--mono);font-size:20px;margin-top:2px}
   .stat .v small{font-size:12px;color:var(--muted)}
@@ -72,62 +76,115 @@
   .ptitle b{color:var(--ink);font-weight:600}
   kbd{font-family:var(--mono);background:#1c1c28;border:1px solid var(--line);border-bottom-width:2px;
     border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink)}
+
+  /* "things to notice" quirks section */
+  .notice{margin-top:28px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:760px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  .ncard .why{font-size:12.5px;font-weight:600}
+
+  /* hover-to-explain popovers */
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  #pop{position:fixed;z-index:60;max-width:300px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:13px;text-align:center;color:#e6ebff}
+  #pop .fig{display:block;margin:9px auto 5px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="stage"><canvas id="c"></canvas></div>
-
-  <aside>
+<div class="page">
+  <header class="hero">
     <h1>2D Ising Model</h1>
     <p class="sub">
-      A lattice of magnetic spins flipping by the <b>Metropolis</b> rule. Cool it and
-      domains align into a magnet; heat past the <b>critical temperature</b>
+      A lattice of magnetic spins flipping by the <span class="x" data-pop="metro">Metropolis</span> rule. Cool it and
+      domains align into a magnet; heat past the <span class="x" data-pop="tc">critical temperature</span>
       (T<sub>c</sub> ≈ 2.269) and order dissolves into noise.
-      <br>Ported from my undergrad computational-physics C/OpenGL coursework.
+      Ported from my undergrad computational-physics C/OpenGL coursework.
     </p>
+  </header>
 
-    <div class="panel">
-      <div class="row">
-        <button id="play" class="primary">Pause</button>
-        <button id="reset">Reset</button>
-      </div>
-
-      <label>Temperature <span class="val" id="tempV"></span></label>
-      <input type="range" id="temp" min="0.05" max="4" step="0.01" value="2.27">
-
-      <label>Magnetic field <span class="val" id="fieldV"></span></label>
-      <input type="range" id="field" min="-1.5" max="1.5" step="0.05" value="0">
-
-      <label>Speed <span class="val" id="speedV"></span></label>
-      <input type="range" id="speed" min="1" max="40" value="8">
-
-      <label>Initial state</label>
-      <div class="seg" id="start">
-        <button data-v="ordered" aria-pressed="true">Ordered</button>
-        <button data-v="random" aria-pressed="false">Random (hot)</button>
+  <div class="cols">
+    <div class="col-left">
+      <div class="stage"><canvas id="c"></canvas></div>
+      <div class="panel">
+        <div class="stats">
+          <div class="stat"><div class="k">Temperature</div><div class="v" id="sT">2.27</div></div>
+          <div class="stat"><div class="k">Magnetisation</div><div class="v" id="sM">—</div></div>
+          <div class="stat"><div class="k">Energy / spin</div><div class="v" id="sE">—</div></div>
+          <div class="stat"><div class="k">Lattice</div><div class="v" id="sL">—</div></div>
+        </div>
       </div>
     </div>
 
-    <div class="panel">
-      <div class="stats">
-        <div class="stat"><div class="k">Temperature</div><div class="v" id="sT">2.27</div></div>
-        <div class="stat"><div class="k">Magnetisation</div><div class="v" id="sM">—</div></div>
-        <div class="stat"><div class="k">Energy / spin</div><div class="v" id="sE">—</div></div>
-        <div class="stat"><div class="k">Lattice</div><div class="v" id="sL">—</div></div>
-      </div>
-    </div>
+    <div class="col-right">
+      <div class="panel">
+        <div class="row">
+          <button id="play" class="primary">Pause</button>
+          <button id="reset">Reset</button>
+        </div>
 
-    <div class="panel">
-      <p class="ptitle"><b>Magnetisation curve</b> &nbsp;|M| vs temperature</p>
-      <canvas id="plot" width="340" height="190"></canvas>
-      <button id="sweepBtn" class="sweep" style="margin-top:10px;width:100%">▶ Auto-sweep temperature (trace the transition)</button>
-      <div class="hint">
-        <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. Auto-sweep ramps T from cold to hot,
-        plotting the average |M| at each step — the sharp drop near T<sub>c</sub> is the phase transition.
+        <label>Temperature <span class="val" id="tempV"></span></label>
+        <input type="range" id="temp" min="0.05" max="4" step="0.01" value="2.27">
+
+        <label>Magnetic field <span class="val" id="fieldV"></span></label>
+        <input type="range" id="field" min="-1.5" max="1.5" step="0.05" value="0">
+
+        <label>Speed <span class="val" id="speedV"></span></label>
+        <input type="range" id="speed" min="1" max="40" value="8">
+
+        <label>Initial state</label>
+        <div class="seg" id="start">
+          <button data-v="ordered" aria-pressed="true">Ordered</button>
+          <button data-v="random" aria-pressed="false">Random (hot)</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="ptitle"><b class="x" data-pop="mag" style="font-weight:600">Magnetisation curve</b> &nbsp;|M| vs temperature</p>
+        <canvas id="plot" width="340" height="190"></canvas>
+        <button id="sweepBtn" class="sweep" style="margin-top:10px;width:100%">▶ Auto-sweep temperature (trace the transition)</button>
+        <div class="hint">
+          <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. Auto-sweep ramps T from cold to hot,
+          plotting the average |M| at each step — the sharp drop near T<sub>c</sub> is the phase transition.
+        </div>
       </div>
     </div>
-  </aside>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>Frozen stripes</h3>
+        <p>Quench it from hot straight down to near-zero and the lattice can jam into stripes — domain walls it's gone too cold to remove.</p>
+        <span class="x why" data-pop="stripes">Why this happens</span>
+      </div>
+      <div class="ncard">
+        <h3>Critical slowing down</h3>
+        <p>Right at T<sub>c</sub> the lattice never settles: domains of every size churn endlessly and the |M| dot jitters instead of holding still.</p>
+        <span class="x why" data-pop="slowdown">What you're seeing</span>
+      </div>
+      <div class="ncard">
+        <h3>It picks a side</h3>
+        <p>With no field, cooling from random freezes the lattice mostly-gold or mostly-dark — at random. Reset a few times and watch it choose.</p>
+        <span class="x why" data-pop="ssb">The deeper idea</span>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -180,7 +237,7 @@ function reset(){
   else { for(let k=0;k<N;k++) s[k] = Math.random()<0.5 ? 1 : -1; }
   computeME();
   stopSweep();
-  plotPts.length = 0;
+  plotPts.length = 0; trail.clear();
   getprobs();
   render(); drawPlot(); updateStats();
 }
@@ -203,7 +260,9 @@ function sweep(){
 const plot = document.getElementById('plot'), px = plot.getContext('2d');
 const PW=340, PH=190, ml=34, mr=10, mt=12, mb=24;
 const Tmax=4, Tc=2.269;
-let plotPts = [];                          // {t, m}
+let plotPts = [];                          // {t, m} from auto-sweep (bright line)
+let trail = new Map();                      // manual exploration: bucketed T -> smoothed |M| (faint dots)
+const TKEY = t => Math.round(t/0.05)*0.05;
 const X = t => ml + (t/Tmax)*(PW-ml-mr);
 const Y = m => mt + (1-m)*(PH-mt-mb);
 function drawPlot(){
@@ -220,7 +279,12 @@ function drawPlot(){
   px.strokeStyle='#7cc4ff'; px.setLineDash([3,3]);
   px.beginPath(); px.moveTo(X(Tc),mt); px.lineTo(X(Tc),PH-mb); px.stroke(); px.setLineDash([]);
   px.fillStyle='#7cc4ff'; px.fillText('Tc', X(Tc)-6, mt+8);
-  // data
+  // manual-mode trail (faint dots painted as you explore temperatures)
+  if(trail.size){
+    px.fillStyle='rgba(255,194,102,0.30)';
+    trail.forEach((m,t)=>{ px.beginPath(); px.arc(X(t), Y(m), 1.7, 0, 7); px.fill(); });
+  }
+  // auto-sweep curve (bright line)
   if(plotPts.length){
     px.strokeStyle='#ffc266'; px.lineWidth=1.5; px.beginPath();
     plotPts.forEach((p,i)=>{ const x=X(p.t), y=Y(p.m); i?px.lineTo(x,y):px.moveTo(x,y); });
@@ -240,7 +304,7 @@ const sweepBtn=document.getElementById('sweepBtn');
 function startSweep(){
   sweeping=true; sweepBtn.setAttribute('aria-pressed','true');
   sweepBtn.textContent='■ Stop auto-sweep';
-  plotPts.length=0; sweepCount=0; sumM=0; measCount=0;
+  plotPts.length=0; trail.clear(); sweepCount=0; sumM=0; measCount=0;
   temperature=Tstart; setTemp(temperature); getprobs();
   running=true; play.textContent='Pause';
 }
@@ -273,6 +337,8 @@ function updateStats(){
 function frame(){
   if(running){
     for(let k=0;k<perFrame;k++){ sweep(); if(sweeping) sweepTick(); }
+    if(!sweeping){ const key=TKEY(temperature), m=Math.abs(M/N);
+      trail.set(key, trail.has(key) ? trail.get(key)*0.85+m*0.15 : m); }
     render(); drawPlot(); updateStats();
   }
   requestAnimationFrame(frame);
@@ -306,6 +372,118 @@ addEventListener('keydown', e=>{
 
 reset();
 requestAnimationFrame(frame);
+</script>
+
+<div id="pop" role="tooltip"></div>
+<script>
+// ---- hover/tap-to-explain popovers ----
+const POP = {
+  metro: { title:'The Metropolis rule', html:`
+    <p>A spin always flips if doing so <b>lowers</b> the energy. If a flip would <b>raise</b>
+       energy by ΔE, it still happens — but only with a probability set by the temperature.
+       Those thermal flips are what melt the order.</p>
+    <div class="eq">P(flip) = min(1,&nbsp;e<sup>−ΔE ⁄ T</sup>)</div>
+    <p class="muted">Hotter T → bigger probability → more flips against the energy. This single
+       rule drives the whole transition.</p>` },
+
+  tc: { title:'Critical temperature, T꜀', html:`
+    <p>Below it, neighbouring spins cooperate and the lattice holds a net magnetisation.
+       Above it, thermal noise wins and magnetisation collapses to zero — a genuine
+       <b>phase transition</b>, like water boiling.</p>
+    <div class="eq">T꜀ = 2 ⁄ ln(1+√2) ≈ 2.269</div>
+    <svg class="fig" width="222" height="64" viewBox="0 0 222 64" xmlns="http://www.w3.org/2000/svg">
+      <line x1="30" y1="6" x2="30" y2="52" stroke="#2a2a38"/>
+      <line x1="30" y1="52" x2="212" y2="52" stroke="#2a2a38"/>
+      <text x="6" y="15" fill="#6b6b80" font-size="9" font-family="monospace">|M|</text>
+      <text x="205" y="62" fill="#6b6b80" font-size="9" font-family="monospace">T</text>
+      <polyline fill="none" stroke="#ffc266" stroke-width="2" stroke-linejoin="round"
+        points="34,13 72,14 98,16 113,22 123,38 135,47 172,49 208,49"/>
+      <line x1="121" y1="6" x2="121" y2="52" stroke="#7cc4ff" stroke-dasharray="3 3"/>
+      <text x="113" y="14" fill="#7cc4ff" font-size="9" font-family="monospace">T꜀</text>
+    </svg>
+    <p class="muted">Onsager's exact 1944 result. Hit auto-sweep to trace this curve yourself.</p>` },
+
+  mag: { title:'Magnetisation — the order parameter', html:`
+    <p>The average of every spin: <b>+1</b> if all point up, <b>−1</b> if all down,
+       <b>0</b> for a random mix. It measures how ordered — how magnetic — the lattice is.</p>
+    <div class="eq">M = (1 ⁄ N) Σ s<sub>i</sub></div>
+    <svg class="fig" width="200" height="78" viewBox="0 0 200 78" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="6" width="50" height="50" rx="5" fill="#ffc466"/>
+      <rect x="130" y="6" width="50" height="50" rx="5" fill="#ffc466"/>
+      <g fill="#1e2240">
+        <rect x="142" y="18" width="12" height="12"/><rect x="156" y="6" width="12" height="12"/>
+        <rect x="130" y="30" width="12" height="12"/><rect x="156" y="32" width="12" height="12"/>
+        <rect x="144" y="44" width="12" height="12"/><rect x="168" y="42" width="12" height="12"/>
+      </g>
+      <text x="45" y="72" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">M ≈ +1</text>
+      <text x="155" y="72" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">M ≈ 0</text>
+    </svg>
+    <p class="muted">The curve plots |M| as the lattice is heated — it falls off a cliff at T꜀.</p>` },
+
+  stripes: { title:'Frozen stripes — a metastable state', html:`
+    <p>Cooled gently, the lattice reaches a single colour: magnetisation ±1, energy −2 per spin
+       (the ground state). But <b>quench it hard</b> from a hot, disordered start and it can trap
+       two flat <b>domain walls</b> running across the box.</p>
+    <svg class="fig" width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="8" width="50" height="50" rx="5" fill="#ffc466"/>
+      <rect x="130" y="8" width="50" height="50" rx="5" fill="#ffc466"/>
+      <rect x="130" y="24" width="50" height="18" fill="#1e2240"/>
+      <text x="45" y="74" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">ground</text>
+      <text x="155" y="74" text-anchor="middle" fill="#9a9aac" font-size="10" font-family="monospace">trapped</text>
+    </svg>
+    <p class="muted">Erasing the walls means bending and merging them — which needs thermal energy
+       it hasn't got at T≈0. So it sits there with |M| stuck near zero. Real materials lock in
+       defects the very same way.</p>` },
+
+  slowdown: { title:'Critical slowing down', html:`
+    <p>Right at <b>T꜀</b> the lattice never reaches a steady state — gold-and-dark domains of
+       <b>every size</b> bloom and dissolve, and the live |M| dot jitters wildly. Those are
+       <b>critical fluctuations</b>.</p>
+    <p class="muted">Approaching T꜀, the typical domain size (the correlation length) diverges, so
+       the system takes ever longer to settle. It's why the dot bobs instead of holding still — and
+       why measuring exactly at T꜀ is genuinely hard.</p>` },
+
+  ssb: { title:'Spontaneous symmetry breaking', html:`
+    <p>With zero field, up and down are perfectly equal — yet below T꜀ the lattice must still pick
+       one. Reset from <b>Random (hot)</b> a few times: sometimes it freezes mostly gold, sometimes
+       mostly dark. Nothing chooses for it.</p>
+    <svg class="fig" width="210" height="62" viewBox="0 0 210 62" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="9" width="44" height="44" rx="7" fill="#ffc466"/>
+      <text x="42" y="39" text-anchor="middle" font-size="22" fill="#241704">↑</text>
+      <text x="105" y="37" text-anchor="middle" fill="#6b6b80" font-size="15" font-family="monospace">or</text>
+      <rect x="146" y="9" width="44" height="44" rx="7" fill="#1e2240"/>
+      <text x="168" y="39" text-anchor="middle" font-size="22" fill="#9fb0ff">↓</text>
+    </svg>
+    <p class="muted">The rules are symmetric; the outcome isn't. The same principle runs through
+       magnets, superconductors and the Higgs field.</p>` },
+};
+(function(){
+  const pop=document.getElementById('pop'); let pinned=null;
+  function show(el){
+    const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html;
+    pop.classList.add('show');
+    const r=el.getBoundingClientRect(), p=pop.getBoundingClientRect(), m=10;
+    let left=Math.max(m, Math.min(r.left+r.width/2-p.width/2, innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px'; pop.style.top=top+'px';
+  }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation();
+      if(pinned===el){ pinned=null; hide(); } else { pinned=el; show(el); } });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){ pinned=null; hide(); } });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){ pinned=null; hide(); } });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); }, true);
+})();
 </script>
 </body>
 </html>

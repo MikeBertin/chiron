@@ -25,24 +25,27 @@
     background:radial-gradient(1200px 800px at 70% -10%,#0e1a1a,#0a0a0f 60%);
     color:var(--ink);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    display:flex;justify-content:center;
   }
-  .wrap{display:flex;gap:24px;padding:28px;max-width:1140px;width:100%;align-items:flex-start}
-  @media (max-width:900px){.wrap{flex-direction:column;align-items:center}}
+  .page{max-width:1080px;margin:0 auto;padding:30px 28px 44px}
+  .hero{margin-bottom:22px}
+  h1{font-size:25px;margin:0 0 7px;letter-spacing:-.2px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0;line-height:1.55;max-width:780px}
+  .sub b{color:var(--accent);font-weight:600}
 
-  .stage{flex:0 0 auto}
+  .cols{display:flex;gap:22px;align-items:flex-start}
+  @media (max-width:900px){.cols{flex-direction:column;align-items:center}}
+  .col-left{flex:0 0 auto;display:flex;flex-direction:column;gap:22px}
+  .col-right{flex:1 1 320px;min-width:300px;max-width:420px;display:flex;flex-direction:column;gap:14px;margin-top:-15px}
+  @media (max-width:900px){.col-right{margin-top:0}.col-left{gap:14px}}
+
+  .stage{position:relative}
   canvas#c{
-    display:block;width:min(64vh,600px);height:auto;
+    display:block;width:min(64vh,540px);height:auto;
     background:#06070b;border:1px solid var(--line);border-radius:10px;
     box-shadow:0 18px 60px -20px #000,0 0 0 1px #000 inset;
   }
 
-  aside{flex:1 1 340px;min-width:300px;max-width:400px}
-  h1{font-size:18px;margin:0 0 2px;letter-spacing:.2px}
-  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;line-height:1.5}
-  .sub b{color:var(--accent);font-weight:600}
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
   .row{display:flex;gap:8px}
   button{
     flex:1;cursor:pointer;border:1px solid var(--line);background:#1c1c28;color:var(--ink);
@@ -63,7 +66,8 @@
   .quick .melt{color:var(--accent2);border-color:#4a2f28}
   .quick .freeze{color:#7cc4ff;border-color:#2a3a4a}
 
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 14px}
+  @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
   .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
   .stat .v{font-family:var(--mono);font-size:20px;margin-top:2px}
   canvas#plot{width:100%;height:auto;display:block;margin-top:4px;border-radius:8px;background:#0e0e16;border:1px solid var(--line)}
@@ -72,63 +76,116 @@
   .hint{color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.5}
   kbd{font-family:var(--mono);background:#1c1c28;border:1px solid var(--line);border-bottom-width:2px;
     border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink)}
+
+  /* "things to notice" quirks section */
+  .notice{margin-top:28px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:760px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  .ncard .why{font-size:12.5px;font-weight:600}
+
+  /* hover-to-explain popovers */
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  #pop{position:fixed;z-index:60;max-width:300px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:13px;text-align:center;color:#e6ebff}
+  #pop .fig{display:block;margin:9px auto 5px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="stage"><canvas id="c"></canvas></div>
-
-  <aside>
+<div class="page">
+  <header class="hero">
     <h1>Molecular Dynamics</h1>
     <p class="sub">
-      Atoms interacting through the <b>Lennard-Jones</b> potential, integrated with the
-      Verlet algorithm. Start as a crystal, then heat it to <b>melt</b> into a liquid —
-      or cool the liquid and watch it re-freeze. Colour shows particle speed.
-      <br>Ported from my undergrad computational-physics C/OpenGL coursework.
+      Atoms interacting through the <span class="x" data-pop="lj">Lennard-Jones</span> potential,
+      integrated with the Verlet algorithm. Start as a crystal, then heat it to <b>melt</b> into a
+      liquid — or cool the liquid and watch it re-freeze. Colour shows particle speed.
+      Ported from my undergrad computational-physics C/OpenGL coursework.
     </p>
+  </header>
 
-    <div class="panel">
-      <div class="row">
-        <button id="play" class="primary">Pause</button>
-        <button id="reset">Reset</button>
-      </div>
-
-      <label>Target temperature <span class="val" id="tempV"></span></label>
-      <input type="range" id="temp" min="0.02" max="2" step="0.01" value="0.30">
-      <div class="quick">
-        <button class="freeze" id="freeze">❄ Freeze (T=0.1)</button>
-        <button class="melt" id="melt">🔥 Melt (T=1.0)</button>
-      </div>
-
-      <label>Thermostat</label>
-      <div class="seg" id="thermo">
-        <button data-v="on" aria-pressed="true">On (hold T)</button>
-        <button data-v="off" aria-pressed="false">Off (free energy)</button>
-      </div>
-
-      <label>Speed <span class="val" id="speedV"></span></label>
-      <input type="range" id="speed" min="1" max="40" value="15">
-    </div>
-
-    <div class="panel">
-      <div class="stats">
-        <div class="stat"><div class="k">Temperature</div><div class="v" id="sT">—</div></div>
-        <div class="stat"><div class="k">Total E / atom</div><div class="v" id="sE">—</div></div>
-        <div class="stat"><div class="k">Potential / atom</div><div class="v" id="sP">—</div></div>
-        <div class="stat"><div class="k">Atoms</div><div class="v" id="sN">—</div></div>
+  <div class="cols">
+    <div class="col-left">
+      <div class="stage"><canvas id="c"></canvas></div>
+      <div class="panel">
+        <div class="stats">
+          <div class="stat"><div class="k">Temperature</div><div class="v" id="sT">—</div></div>
+          <div class="stat"><div class="k"><span class="x" data-pop="energy">Total E / atom</span></div><div class="v" id="sE">—</div></div>
+          <div class="stat"><div class="k">Potential / atom</div><div class="v" id="sP">—</div></div>
+          <div class="stat"><div class="k">Atoms</div><div class="v" id="sN">—</div></div>
+        </div>
       </div>
     </div>
 
-    <div class="panel">
-      <p class="ptitle"><b>Temperature</b> &nbsp;vs time</p>
-      <canvas id="plot" width="340" height="150"></canvas>
-      <div class="hint">
-        <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. 2D Lennard-Jones melts around
-        T ≈ 0.4–0.7. Turn the thermostat <b>off</b> to conserve energy and watch the
-        crystal and liquid coexist.
+    <div class="col-right">
+      <div class="panel">
+        <div class="row">
+          <button id="play" class="primary">Pause</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <label><span class="x" data-pop="temp">Target temperature</span> <span class="val" id="tempV"></span></label>
+        <input type="range" id="temp" min="0.02" max="2" step="0.01" value="0.30">
+        <div class="quick">
+          <button class="freeze" id="freeze">❄ Freeze (T=0.1)</button>
+          <button class="melt" id="melt">🔥 Melt (T=1.0)</button>
+        </div>
+
+        <label>Thermostat</label>
+        <div class="seg" id="thermo">
+          <button data-v="on" aria-pressed="true">On (hold T)</button>
+          <button data-v="off" aria-pressed="false">Off (free energy)</button>
+        </div>
+
+        <label>Speed <span class="val" id="speedV"></span></label>
+        <input type="range" id="speed" min="1" max="40" value="15">
+      </div>
+
+      <div class="panel">
+        <p class="ptitle"><b>Temperature</b> &nbsp;vs time</p>
+        <canvas id="plot" width="340" height="150"></canvas>
+        <div class="hint">
+          <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset. 2D Lennard-Jones melts around
+          T ≈ 0.4–0.7. Turn the thermostat <b>off</b> to conserve energy and watch the
+          crystal and liquid coexist.
+        </div>
       </div>
     </div>
-  </aside>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>Supercooling</h3>
+        <p>Quench the liquid fast and it can stay liquid below its freezing point — then snap into a solid all at once.</p>
+        <span class="x why" data-pop="supercool">Why it lags</span>
+      </div>
+      <div class="ncard">
+        <h3>Hexagonal packing</h3>
+        <p>Left to crystallise, atoms settle into a triangular lattice — each ringed by six neighbours, the densest 2D packing.</p>
+        <span class="x why" data-pop="hexpack">…and its defects</span>
+      </div>
+      <div class="ncard">
+        <h3>Solid vs liquid</h3>
+        <p>In the crystal atoms only vibrate in place; melt it and they wander past one another. That wandering is what a liquid <i>is</i>.</p>
+        <span class="x why" data-pop="diffusion">The difference</span>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -314,6 +371,100 @@ addEventListener('keydown', e=>{
 
 initLattice(targetT);
 requestAnimationFrame(frame);
+</script>
+
+<div id="pop" role="tooltip"></div>
+<script>
+// ---- hover/tap-to-explain popovers ----
+const POP = {
+  lj: { title:'The Lennard-Jones potential', html:`
+    <p>The energy between two atoms versus their separation. Push them too close and they repel
+       <b>fiercely</b> (the steep 1/r¹² wall); let them drift apart and a gentle <b>1/r⁶ attraction</b>
+       pulls them back. The balance sets a preferred spacing.</p>
+    <div class="eq">V(r) = 4ε[(σ⁄r)<sup>12</sup> − (σ⁄r)<sup>6</sup>]</div>
+    <svg class="fig" width="222" height="92" viewBox="0 0 222 92" xmlns="http://www.w3.org/2000/svg">
+      <line x1="28" y1="8" x2="28" y2="84" stroke="#2a2a38"/>
+      <line x1="28" y1="27" x2="214" y2="27" stroke="#2a2a38" stroke-dasharray="3 3"/>
+      <text x="14" y="30" fill="#6b6b80" font-size="9" font-family="monospace">0</text>
+      <text x="196" y="20" fill="#6b6b80" font-size="9" font-family="monospace">r →</text>
+      <polyline fill="none" stroke="#5fd0c5" stroke-width="2" stroke-linejoin="round"
+        points="40,7 47,17 54,27 61,45 69,63 78,73 92,68 112,57 140,47 173,40 212,34"/>
+      <circle cx="78" cy="73" r="2.8" fill="#ff7a59"/>
+      <text x="78" y="89" text-anchor="middle" fill="#ff9a7e" font-size="9" font-family="monospace">r₀</text>
+    </svg>
+    <p class="muted">Atoms settle near the bottom of the well (r₀) — which is why they line up into a
+       crystal when it's cold enough.</p>` },
+
+  temp: { title:'Temperature is motion', html:`
+    <p>Here temperature isn't a separate quantity — it <b>is</b> the average kinetic energy of the
+       atoms. Raise it and they jiggle harder; the thermostat keeps adding or bleeding off motion to
+       hold your target.</p>
+    <div class="eq">T = ⟨ ½ m v² ⟩  per degree of freedom</div>
+    <p class="muted">That's also what the colours show — blue atoms are slow (cold), red are fast (hot).</p>` },
+
+  energy: { title:'Total energy per atom', html:`
+    <p>Kinetic energy (motion) plus potential energy (stored in the Lennard-Jones bonds), per atom.
+       With the thermostat <b>on</b> it drifts as heat is pumped in or out; switch it <b>off</b> and it
+       holds fixed — the simulation conserves energy.</p>
+    <div class="eq">E = KE + PE</div>
+    <p class="muted">With the thermostat off, watch KE and PE trade back and forth while the total
+       barely moves — that's energy conservation in action.</p>` },
+
+  supercool: { title:'Supercooling', html:`
+    <p>Quench the liquid <b>fast</b> (drag the temperature straight down, or hit Freeze) and it can
+       stay liquid <b>below</b> its freezing point — there's no seed crystal for it to grow from. Then,
+       all at once, it snaps solid.</p>
+    <p class="muted">Real liquids do this too: ultra-pure water supercools well below 0 °C until
+       something nucleates it. Cool slowly instead and you get a cleaner crystal.</p>` },
+
+  hexpack: { title:'Hexagonal close-packing', html:`
+    <p>Left to crystallise, the atoms settle into a <b>triangular</b> lattice — each one ringed by six
+       neighbours. For equal discs in 2D, that's the densest packing there is.</p>
+    <svg class="fig" width="120" height="98" viewBox="0 0 120 98" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#5fd0c5">
+        <circle cx="60" cy="49" r="13"/>
+        <circle cx="60" cy="23" r="13"/><circle cx="60" cy="75" r="13"/>
+        <circle cx="38" cy="36" r="13"/><circle cx="82" cy="36" r="13"/>
+        <circle cx="38" cy="62" r="13"/><circle cx="82" cy="62" r="13"/>
+      </g>
+    </svg>
+    <p class="muted">Refreeze from a melt and you'll often spot <b>grain boundaries</b> — mismatched
+       crystal patches that collided as they grew, exactly like in real metals.</p>` },
+
+  diffusion: { title:'Solid vs liquid: who moves?', html:`
+    <p>In the crystal each atom only <b>vibrates</b> around a fixed spot — neighbours stay neighbours
+       forever. Heat it past melting and atoms start to <b>wander</b> past one another, diffusing
+       across the box.</p>
+    <p class="muted">Same atoms, same forces. The only difference between solid and liquid is whether
+       atoms can swap places — turn the thermostat to Melt and watch them start to flow.</p>` },
+};
+(function(){
+  const pop=document.getElementById('pop'); let pinned=null;
+  function show(el){
+    const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html;
+    pop.classList.add('show');
+    const r=el.getBoundingClientRect(), p=pop.getBoundingClientRect(), m=10;
+    let left=Math.max(m, Math.min(r.left+r.width/2-p.width/2, innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px'; pop.style.top=top+'px';
+  }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation();
+      if(pinned===el){ pinned=null; hide(); } else { pinned=el; show(el); } });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){ pinned=null; hide(); } });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){ pinned=null; hide(); } });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); }, true);
+})();
 </script>
 </body>
 </html>
